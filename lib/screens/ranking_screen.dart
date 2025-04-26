@@ -40,7 +40,7 @@ class RankingScreenState extends State<RankingScreen> {
               itemBuilder: (context, index) {
                 final ranking = rankings[index];
                 return ListTile(
-                  title: Text('${ranking['category']} - ${ranking['difficulty']}'),
+                  title: Text('${ranking['categoryName']} - ${ranking['difficulty']}'),
                   subtitle: Text(
                       'Score: ${ranking['score']}, ${ranking['timestamp']}'),
                 );

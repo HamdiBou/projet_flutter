@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+
   // Initialize awesome_notifications
   await AwesomeNotifications().initialize(
       'resource://assets/drawable/logo',
@@ -79,6 +80,9 @@ class MyApp extends StatelessWidget {
             return supportedLocales.first;
           },
           home: const HomeScreen(),
+          routes: {
+            '/home': (context) => const HomeScreen(),
+          },
         );
       },
     );

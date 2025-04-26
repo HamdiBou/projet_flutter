@@ -6,12 +6,47 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:vibration/vibration.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:html_unescape/html_unescape.dart';
+import '../services/localization_service.dart';
 
 class QuizScreen extends StatefulWidget {
   final List<Question> questions;
-  final String category;
+  final String category; // This is the category ID
+  final String categoryName; // This is the human-readable name
   final String difficulty;
-  const QuizScreen({super.key, required this.questions, required this.category, required this.difficulty});
+
+  const QuizScreen({
+    super.key,
+    required this.questions,
+    required this.category,
+    required this.categoryName,
+    required this.difficulty
+  });
+
+  // Constructor for backward compatibility
+  factory QuizScreen.withCategoryId({
+    Key? key,
+    required List<Question> questions,
+    required String category,
+    required String difficulty,
+    BuildContext? context,
+  }) {
+    // Get category name from context if available or use ID as fallback
+    String categoryName = category;
+    if (context != null) {
+      final localizationService = LocalizationService.of(context);
+      if (localizationService != null) {
+        categoryName = localizationService.translate('category_$category') ?? category;
+      }
+    }
+
+    return QuizScreen(
+      key: key,
+      questions: questions,
+      category: category,
+      categoryName: categoryName,
+      difficulty: difficulty,
+    );
+  }
 
   @override
   QuizScreenState createState() => QuizScreenState();
@@ -25,7 +60,7 @@ class QuizScreenState extends State<QuizScreen> {
   final player = AudioPlayer();
   bool _soundEnabled = true;
   final unescape = HtmlUnescape();
-  
+
   // Timer variables
   int _timeLeft = 30; // Time in seconds
   Timer? _timer;
@@ -85,6 +120,7 @@ class QuizScreenState extends State<QuizScreen> {
             score: correctAnswers,
             totalQuestions: widget.questions.length,
             category: widget.category,
+            categoryName: widget.categoryName, // Pass the category name
             difficulty: widget.difficulty,
             onRetry: () {
               Navigator.pop(context);
@@ -116,9 +152,11 @@ class QuizScreenState extends State<QuizScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localization = LocalizationService.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Quiz'),
+        title: Text(localization?.translate('quiz') ?? 'Quiz'),
         automaticallyImplyLeading: false,
       ),
       body: Center(
@@ -138,7 +176,7 @@ class QuizScreenState extends State<QuizScreen> {
                   borderRadius: BorderRadius.circular(8.0),
                 ),
                 child: Text(
-                  'Time left: $_timeLeft',
+                  '${localization?.translate('time_left') ?? 'Time left'}: $_timeLeft',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -146,37 +184,37 @@ class QuizScreenState extends State<QuizScreen> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // Question display
               Text(
                 unescape.convert(widget.questions[currentQuestionIndex].question),
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // Options
               ...(widget.questions[currentQuestionIndex].options).map((option) {
                 final String unescapedOption = unescape.convert(option);
                 final bool isCorrect = option == widget.questions[currentQuestionIndex].correctAnswer;
                 final bool isSelected = option == selectedAnswer;
-                
+
                 // Icon for feedback
                 Widget getAnswerStatusIcon() {
                   if (!answerWasSelected) return const SizedBox.shrink();
-                  
+
                   if (isCorrect) {
                     return const Icon(Icons.check_circle, color: Colors.green);
                   } else if (isSelected) {
                     return const Icon(Icons.cancel, color: Colors.red);
                   }
-                  
+
                   return const SizedBox.shrink();
                 }
-                
+
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: Container(
@@ -192,24 +230,24 @@ class QuizScreenState extends State<QuizScreen> {
                       onPressed: answerWasSelected
                           ? null
                           : () async {
-                              setState(() {
-                                answerWasSelected = true;
-                                selectedAnswer = option;
-                                
-                                if (isCorrect) {
-                                  correctAnswers++;
-                                  playSound('sounds/correct.mp3');
-                                } else {
-                                  playSound('sounds/incorrect.mp3');
-                                  vibrate();
-                                }
-                              });
-                              
-                              // Auto proceed to next question after delay
-                              Future.delayed(const Duration(milliseconds: 2000), () {
-                                _nextQuestion();
-                              });
-                            },
+                        setState(() {
+                          answerWasSelected = true;
+                          selectedAnswer = option;
+
+                          if (isCorrect) {
+                            correctAnswers++;
+                            playSound('sounds/correct.mp3');
+                          } else {
+                            playSound('sounds/incorrect.mp3');
+                            vibrate();
+                          }
+                        });
+
+                        // Auto proceed to next question after delay
+                        Future.delayed(const Duration(milliseconds: 2000), () {
+                          _nextQuestion();
+                        });
+                      },
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12.0),
                       ),
@@ -240,12 +278,12 @@ class QuizScreenState extends State<QuizScreen> {
                   ),
                 );
               }),
-              
+
               const SizedBox(height: 20),
-              
+
               // Progress indicator
               Text(
-                'Question ${currentQuestionIndex + 1} / ${widget.questions.length}',
+                '${localization?.translate('question') ?? 'Question'} ${currentQuestionIndex + 1} / ${widget.questions.length}',
                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ],
